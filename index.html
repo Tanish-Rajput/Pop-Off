@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balloon Shooter</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Poppins:wght@400;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            overflow: hidden;
+            background: #111;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+            z-index: 100;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+            animation: pulseCrosshair 1.5s infinite ease-in-out;
+        }
+        
+        #crosshair::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        #ui {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #f0f0f0;
+            z-index: 100;
+            text-align: right;
+            font-family: 'Poppins', sans-serif;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        #timer {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            transition: color 0.3s;
+        }
+        
+        #score, #bullets {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            opacity: 0.9;
+        }
+        
+        #gameOver {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+        
+        #gameOverContent {
+            text-align: center;
+            color: #fff;
+            padding: 40px 60px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(12px);
+            animation: popIn 0.5s ease-out;
+        }
+        
+        #gameOverTitle {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 60px;
+            font-weight: 900;
+            color: #ffffff;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+        
+        #finalScore {
+            font-family: 'Poppins', sans-serif;
+            font-size: 24px;
+            font-weight: 600;
+            color: #e0e0e0;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        
+        #restartBtn {
+            padding: 12px 32px;
+            font-size: 18px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #333, #555);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        #restartBtn:hover {
+            background: linear-gradient(90deg, #444, #666);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+        
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: #e0e0e0;
+            font-size: 14px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-family: 'Poppins', sans-serif;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+        
+        #instructions:hover {
+            opacity: 1;
+        }
+        
+        .instruction-line {
+            margin-bottom: 4px;
+        }
+        
+        @keyframes pulseCrosshair {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.2); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="crosshair"></div>
+        
+        <div id="ui">
+            <div id="timer">10</div>
+            <div id="score">Score: 0/5</div>
+            <div id="bullets">Bullets: 7</div>
+        </div>
+        
+        <div id="instructions">
+            <div class="instruction-line"><strong>Mouse:</strong> Look around</div>
+            <div class="instruction-line"><strong>E:</strong> Shoot</div>
+            <div class="instruction-line"><strong>ESC:</strong> Toggle cursor</div>
+        </div>
+        
+        <div id="gameOver">
+            <div id="gameOverContent">
+                <div id="gameOverTitle">GAME OVER</div>
+                <div id="finalScore">Final Score: 0/5</div>
+                <button id="restartBtn" onclick="restartGame()">PLAY AGAIN</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script>
+        // Game variables
+        let scene, camera, renderer, gun, balloons = [];
+        let score = 0, gameStarted = false, gameEnded = false;
+        let timeLeft = 10, timerInterval;
+        let mouseX = 0, mouseY = 0, pointerLocked = false;
+        let raycaster, mouse;
+        let bulletCount = 7, balloonCount = 5, level = 1;
+        const loader = new THREE.GLTFLoader();
+        
+        // Audio context and custom sounds
+        let audioContext, shootSound, popSound;
+        
+        // Camera shake variables
+        let shakeIntensity = 0, shakeDecay = 0;
+        
+        // Initialize the game
+        function init() {
+            // Create scene
+            scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0xf5f5f5, 5, 30);
+            
+            // Create camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 1.6, 0);
+            
+            // Create renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0xe0e0e0);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('gameContainer').appendChild(renderer.domElement);
+            
+            // Create raycaster for shooting
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+            
+            // Create studio environment
+            createEnvironment();
+            
+            // Create gun
+            createGun();
+            
+            // Create balloons
+            createBalloons();
+            
+            // Setup lighting
+            setupLighting();
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Initialize audio
+            initAudio();
+            
+            // Start render loop
+            animate();
+        }
+        
+        function createEnvironment() {
+            // Gradient back wall
+            const wallGeometry = new THREE.PlaneGeometry(50, 20);
+            const wallMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    topColor: { value: new THREE.Color(0xffffff) },
+                    bottomColor: { value: new THREE.Color(0xd0d0d0) },
+                },
+                vertexShader: `
+                    varying vec2 vUv;
+                    void main() {
+                        vUv = uv;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform vec3 topColor;
+                    uniform vec3 bottomColor;
+                    varying vec2 vUv;
+                    void main() {
+                        vec3 color = mix(bottomColor, topColor, vUv.y);
+                        gl_FragColor = vec4(color, 1.0);
+                    }
+                `,
+                side: THREE.DoubleSide
+            });
+            const backWall = new THREE.Mesh(wallGeometry, wallMaterial);
+            backWall.position.set(0, 10, -25);
+            backWall.receiveShadow = true;
+            scene.add(backWall);
+            
+            // Studio floor
+            const floorGeometry = new THREE.PlaneGeometry(50, 50);
+            const floorMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0xf0f0f0,
+                transparent: true,
+                opacity: 0.7
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+        }
+        
+        function createGun() {
+            loader.load(
+                'assetsPistol.glb',
+                (gltf) => {
+                    gun = gltf.scene;
+                    gun.scale.set(0.25, 0.25, 0.25);
+                    gun.position.set(0.8, -0.6, -1.2);
+                    gun.rotation.y = 0;
+                    gun.castShadow = true;
+                    camera.add(gun);
+                    scene.add(camera);
+                    console.log('Gun model loaded');
+                },
+                undefined,
+                (error) => {
+                    console.error('Failed to load gun.glb:', error);
+                    const gunGroup = new THREE.Group();
+                    const barrelGeometry = new THREE.CylinderGeometry(0.03, 0.05, 0.8, 8);
+                    const barrelMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 });
+                    const barrel = new THREE.Mesh(barrelGeometry, barrelMaterial);
+                    barrel.rotation.z = Math.PI / 2;
+                    barrel.position.set(0.4, 0, 0);
+                    gunGroup.add(barrel);
+                    const bodyGeometry = new THREE.BoxGeometry(0.3, 0.15, 0.6);
+                    const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0x222222 });
+                    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+                    body.position.set(0, 0, -0.2);
+                    gunGroup.add(body);
+                    gunGroup.position.set(0.8, -0.6, -1.2);
+                    gunGroup.rotation.y = -0.1;
+                    gunGroup.castShadow = true;
+                    camera.add(gunGroup);
+                    scene.add(camera);
+                    gun = gunGroup;
+                    console.log('Using fallback gun');
+                }
+            );
+        }
+        
+        function createBalloons() {
+            for (let i = 0; i < balloonCount; i++) {
+                loader.load(
+                    'assets/Balloon.glb',
+                    (gltf) => {
+                        const balloon = gltf.scene;
+                        balloon.scale.set(2, 2, 2);
+                        balloon.position.set(
+                            (Math.random() - 0.5) * 10,
+                            2 + Math.random() * 3,
+                            -5 - Math.random() * 5
+                        );
+                        balloon.userData = { id: i, popped: false };
+                        balloon.castShadow = true;
+                        scene.add(balloon);
+                        balloons.push(balloon);
+                        console.log(`Balloon ${i + 1} loaded`);
+                    },
+                    undefined,
+                    (error) => {
+                        console.error(`Failed to load balloon.glb for balloon ${i + 1}:`, error);
+                        const balloonGroup = new THREE.Group();
+                        const balloonGeometry = new THREE.SphereGeometry(0.4, 16, 16);
+                        const balloonMaterial = new THREE.MeshPhongMaterial({ 
+                            color: 0xff4444,
+                            shininess: 100
+                        });
+                        const balloonMesh = new THREE.Mesh(balloonGeometry, balloonMaterial);
+                        balloonMesh.castShadow = true;
+                        balloonGroup.add(balloonMesh);
+                        balloonGroup.position.set(
+                            (Math.random() - 0.5) * 10,
+                            2 + Math.random() * 3,
+                            -5 - Math.random() * 5
+                        );
+                        balloonGroup.userData = { id: i, popped: false };
+                        scene.add(balloonGroup);
+                        balloons.push(balloonGroup);
+                        console.log(`Using fallback balloon ${i + 1}`);
+                    }
+                );
+            }
+        }
+        
+        function setupLighting() {
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            directionalLight.position.set(0, 20, 10);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 50;
+            scene.add(directionalLight);
+            const pointLight1 = new THREE.PointLight(0xffffff, 0.4, 30);
+            pointLight1.position.set(-15, 10, -5);
+            scene.add(pointLight1);
+            const pointLight2 = new THREE.PointLight(0xffffff, 0.4, 30);
+            pointLight2.position.set(15, 10, -5);
+            scene.add(pointLight2);
+        }
+        
+        function setupEventListeners() {
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('click', () => {
+                if (!pointerLocked && !gameEnded) {
+                    renderer.domElement.requestPointerLock();
+                }
+            });
+            document.addEventListener('pointerlockchange', () => {
+                pointerLocked = document.pointerLockElement === renderer.domElement;
+            });
+            window.addEventListener('resize', onWindowResize);
+        }
+        
+        function onMouseMove(event) {
+            if (!pointerLocked) return;
+            mouseX += event.movementX * 0.002;
+            mouseY += event.movementY * 0.002;
+            mouseY = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, mouseY));
+            camera.rotation.order = 'YXZ';
+            camera.rotation.y = -mouseX;
+            camera.rotation.x = -mouseY;
+            if (gun) {
+                gun.rotation.y = -0.1 + mouseX * 0.1;
+                gun.rotation.x = mouseY * 0.1;
+            }
+        }
+        
+        function onKeyDown(event) {
+            switch(event.code) {
+                case 'KeyE':
+                    shoot();
+                    break;
+                case 'Escape':
+                    if (pointerLocked) {
+                        document.exitPointerLock();
+                    }
+                    break;
+            }
+        }
+        
+        function shoot() {
+            if (gameEnded || bulletCount <= 0) return;
+            if (!gameStarted) {
+                startGame();
+            }
+            bulletCount--;
+            updateBullets();
+            playShootSound();
+            triggerCameraShake();
+            if (gun) {
+                gun.position.z -= 0.1;
+                setTimeout(() => {
+                    gun.position.z += 0.1;
+                }, 100);
+            }
+            raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+            const intersects = raycaster.intersectObjects(balloons, true);
+            if (intersects.length > 0) {
+                let hitBalloon = intersects[0].object;
+                while (hitBalloon && !balloons.includes(hitBalloon)) {
+                    hitBalloon = hitBalloon.parent;
+                }
+                if (hitBalloon && !hitBalloon.userData.popped) {
+                    popBalloon(hitBalloon);
+                }
+            }
+            if (bulletCount <= 0 && score < balloonCount) {
+                endGame();
+            }
+        }
+        
+        function triggerCameraShake() {
+            shakeIntensity = 0.02;
+            shakeDecay = 0.9;
+        }
+        
+        function popBalloon(balloon) {
+            if (balloon.userData.popped) return;
+            balloon.userData.popped = true;
+            score++;
+            playPopSound();
+            const popAnimation = () => {
+                balloon.scale.multiplyScalar(1.2);
+                balloon.rotation.x += 0.1;
+                balloon.rotation.y += 0.1;
+                setTimeout(() => {
+                    scene.remove(balloon);
+                }, 200);
+            };
+            popAnimation();
+            updateScore();
+            if (score >= balloonCount) {
+                nextLevel();
+            }
+        }
+        
+        function startGame() {
+            gameStarted = true;
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimer();
+                if (timeLeft <= 0 || bulletCount <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+        
+        function nextLevel() {
+            level++;
+            balloonCount += 3;
+            bulletCount = balloonCount + 2;
+            score = 0;
+            timeLeft = 10;
+            gameStarted = false;
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            camera.rotation.set(0, 0, 0);
+            balloons.forEach(balloon => {
+                scene.remove(balloon);
+            });
+            balloons = [];
+            createBalloons();
+            updateScore();
+            updateTimer();
+            updateBullets();
+        }
+        
+        function endGame() {
+            gameEnded = true;
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            document.getElementById('finalScore').textContent = `Final Score: ${score}/${balloonCount}`;
+            document.getElementById('gameOver').style.display = 'flex';
+            if (pointerLocked) {
+                document.exitPointerLock();
+            }
+        }
+        
+        function restartGame() {
+            score = 0;
+            timeLeft = 10;
+            gameStarted = false;
+            gameEnded = false;
+            mouseX = 0;
+            mouseY = 0;
+            level = 1;
+            balloonCount = 5;
+            bulletCount = balloonCount + 2;
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            camera.rotation.set(0, 0, 0);
+            balloons.forEach(balloon => {
+                scene.remove(balloon);
+            });
+            balloons = [];
+            createBalloons();
+            updateScore();
+            updateTimer();
+            updateBullets();
+            document.getElementById('gameOver').style.display = 'none';
+        }
+        
+        function updateScore() {
+            document.getElementById('score').textContent = `Score: ${score}/${balloonCount}`;
+        }
+        
+        function updateTimer() {
+            document.getElementById('timer').textContent = timeLeft;
+            const timerElement = document.getElementById('timer');
+            if (timeLeft <= 3) {
+                timerElement.style.color = '#ff5555';
+                timerElement.style.animation = 'pulse 0.5s infinite';
+            } else {
+                timerElement.style.color = '#f0f0f0';
+                timerElement.style.animation = 'none';
+            }
+        }
+        
+        function updateBullets() {
+            document.getElementById('bullets').textContent = `Bullets: ${bulletCount}`;
+        }
+        
+        function initAudio() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            shootSound = new Audio('assets/shoot01.mp3');
+            shootSound.preload = 'auto';
+            popSound = new Audio('assets/pop.mp3');
+            popSound.preload = 'auto';
+        }
+        
+        function playShootSound() {
+            if (!audioContext || !shootSound) return;
+            shootSound.currentTime = 0;
+            shootSound.play().catch(error => {
+                console.error('Failed to play shoot sound:', error);
+            });
+        }
+        
+        function playPopSound() {
+            if (!audioContext || !popSound) return;
+            popSound.currentTime = 0;
+            popSound.play().catch(error => {
+                console.error('Failed to play pop sound:', error);
+            });
+        }
+        
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            if (shakeIntensity > 0.001) {
+                camera.rotation.x += (Math.random() - 0.5) * shakeIntensity;
+                camera.rotation.y += (Math.random() - 0.5) * shakeIntensity;
+                shakeIntensity *= shakeDecay;
+            } else {
+                shakeIntensity = 0;
+            }
+            balloons.forEach((balloon, index) => {
+                if (!balloon.userData.popped) {
+                    balloon.position.y += Math.sin(Date.now() * 0.001 + index) * 0.002;
+                    balloon.rotation.y += 0.005;
+                }
+            });
+            renderer.render(scene, camera);
+        }
+        
+        init();
+    </script>
+</body>
+</html>
